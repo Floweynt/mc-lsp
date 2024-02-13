@@ -1,0 +1,29 @@
+{
+  "name": "monumenta-lsp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^1.6.1",
+    "@stylistic/eslint-plugin-ts": "^1.6.1",
+    "@types/node": "^20.11.17",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/parser": "^7.0.1",
+    "eslint": "^8.56.0",
+    "eslint-stylistic": "^0.0.0-0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^7.0.1",
+    "typescript-eslint-language-service": "^5.0.5"
+  },
+  "dependencies": {
+    "uuid": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
+  }
+}

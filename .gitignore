@@ -1,0 +1,8 @@
+node_modules/ 
+.vim/
+command_registration.json
+a.mcfunction
+a.txt
+build/
+package-lock.json
+.tsc-build
