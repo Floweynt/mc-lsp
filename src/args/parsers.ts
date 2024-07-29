@@ -3,7 +3,10 @@ import {ArgParseResult, ArgumentParser, ExampleEntry} from "./argument";
 import {BlockStateLikeParser} from "./blockstate";
 import {ColorArgument} from "./color";
 import {EntityParser} from "./entity";
+import {EntityAnchorArgument} from "./entity_anchor";
+import {ItemLikeParser} from "./item";
 import {NDimensionalVectorArgument} from "./location";
+import {MessageArgument} from "./message";
 import {CompoundTagArgument} from "./nbt";
 import {OperatorArgument} from "./operator";
 import {ParticleArgument} from "./particle";
@@ -187,13 +190,27 @@ export const ARGUMENT_PARSERS: {[key: string]: ArgParserInfo} = {
         factory: () => new ParticleArgument(),
         sample: [],
     },
+    "minecraft:entity_anchor": {
+        factory: () => new EntityAnchorArgument(),
+        sample: [],
+    },
+    "minecraft:message": {
+        factory: () => new MessageArgument(),
+        sample: [],
+    },
+    "minecraft:item_stack": {
+        factory: () => new ItemLikeParser("ItemStack", false),
+    },
+    "minecraft:item_predicate": {
+        factory: () => new ItemLikeParser("ItemPredicate", true),
+    },
 };
 
 export function getParser(name: string) {
     const parser = ARGUMENT_PARSERS[name];
 
     // oops, I forgot to implement something  
-    if (parser == undefined)
+    if (parser === undefined)
         throw Error(`Parser not implemented for ${name}`);
     return parser;
 }

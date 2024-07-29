@@ -46,8 +46,7 @@ export class EntityParser implements ArgumentParser {
                     noEq: "EntityParser: missing '=' in predicate",
                     extraComma: "EntityParser: extra comma in property",
                 },
-            }, /^\[([^[]*)\](.*)$/);
-
+            }, /^\[([^[]*)\](.*)$/); // TODO: this regex doesn't work, we need a better parser here...
 
             props?.forEach(([name, value]) => {
                 const predParser = ENTITY_PREDICATE_PARSERS[name.str()];
@@ -66,6 +65,7 @@ export class EntityParser implements ArgumentParser {
             });
         } else {
             try {
+                // parse uuid
                 parse(arg.value.str());
                 res.token(arg, SemanticTokenType.UUID);
                 return res;
@@ -75,7 +75,7 @@ export class EntityParser implements ArgumentParser {
                     return res.err(arg, "EntityParser: player name too long (max 16 characters)");
                 }
 
-                if (!/\w+/.test(arg.value.str())) {
+                if (!/^\w+$/.test(arg.value.str())) {
                     return res.err(arg, "EntityParser: bad player name (illegal character)");
                 }
 

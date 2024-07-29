@@ -2,10 +2,11 @@
 import {CompletionItem, CompletionItemKind, Diagnostic} from "vscode-languageserver";
 import {CommandRange, CommandToken, TokenReader, between, getRange, toLspRange, tokenize} from "./tok";
 import {SemanticTokenType} from "./sem";
-import {ArgParseResult, SemanticToken} from "./args/argument";
+import {SemanticToken} from "./args/argument";
 import {getParser} from "./args/parsers";
 import {Config, CommandNode, CommandRootNode} from "./config";
 import {requireHasValue} from "./utils";
+import assert from "assert";
 
 export interface CommandSemanticInfoPathEntry {
     isLiteral: boolean;
@@ -19,11 +20,11 @@ export type CommandSemanticInfo = {
     readonly tokens: SemanticToken[];
 } & ({
     readonly isAmbiguous: false;
-    readonly path: CommandSemanticInfoPathEntry[];
+    readonly path: readonly CommandSemanticInfoPathEntry[];
     readonly doAutocomplete: (ch: number) => CompletionItem[];
 } | {
     readonly isAmbiguous: true;
-    readonly path: CommandSemanticInfoPathEntry[][];
+    readonly path: readonly CommandSemanticInfoPathEntry[][];
     readonly doAutocomplete: (ch: number) => CompletionItem[];
 })
 
@@ -44,7 +45,7 @@ function resolveCommandByPath(root: CommandRootNode, path: string[]) {
     return path.reduce<CommandNode>((node, name) => requireHasValue((node.children ?? {})[name]), root);
 }
 
-function nodeToList(node: ParseResultNode): ParseResultNode[] {
+function nodeToList(node: ParseResultNode): readonly ParseResultNode[] {
     const parseResultList: ParseResultNode[] = [];
 
     while (node.parent !== undefined) {
@@ -53,13 +54,11 @@ function nodeToList(node: ParseResultNode): ParseResultNode[] {
     }
 
     // The last node is always the root, which isn't a real node and should be ignored.
-    parseResultList.pop();
     return parseResultList.reverse();
 }
 
 function generateUnambiguousReport(node: ParseResultNode): CommandSemanticInfo {
     const path = nodeToList(node);
-
     return {
         diagnostics: path.flatMap(entry => entry.diagnostics),
         tokens: path.flatMap(entry => entry.tokens),
@@ -105,17 +104,13 @@ class CommandParser {
     }
 
     private parseChildren(curr: ParseResultNode): ParseResultNode[] {
-        const ret: ParseResultNode[] = [];
         const tokReader = curr.tokReader;
 
-        for (const [name, child] of effectiveChildNodes(this.root, curr.node)) {
+        return effectiveChildNodes(this.root, curr.node).map(([name, child]) => {
             const range = getRange(tokReader.current());
 
             if (child.type === "literal") {
-                const result = new ArgParseResult();
-                result.token(curr.tokReader.current(), SemanticTokenType.COMMAND_LITERAL);
-
-                ret.push({
+                return {
                     parent: curr,
                     diagnostics: [],
                     tokens: [{
@@ -129,7 +124,7 @@ class CommandParser {
                     tokReader: tokReader.fork().next(),
                     isArgParseSuccess: name === curr.tokReader.current().value.str(),
                     isRoot: false,
-                });
+                };
             } else if (child.type === "argument") {
                 const parser = getParser(child.parser);
                 const tokReaderFork = tokReader.fork();
@@ -138,7 +133,7 @@ class CommandParser {
                 const result = parser.factory(child.properties ?? {}).tryParse(tokReaderFork, this.config);
 
                 // report and move on
-                ret.push({
+                return {
                     parent: curr,
                     diagnostics: [...result.errorsAsLsp(this.line), ...result.warningsAsLsp(this.line)],
                     tokens: [...result.tokensAsLsp(this.line)],
@@ -148,11 +143,11 @@ class CommandParser {
                     tokReader: tokReaderFork,
                     isArgParseSuccess: result.errors.length === 0,
                     isRoot: false,
-                });
+                };
             }
-        }
 
-        return ret;
+            throw Error("illegal state");
+        });
     }
 
     // The logic here is terrible and difficult to understand.
@@ -174,7 +169,6 @@ class CommandParser {
         // This main loop is basically a BFS
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            console.log(currResults);
             // Handle end of command, removing entries that cannot be read any further
             // TODO: generate smarter diagnostics for garbage after end of line
             const nonterminalResults = currResults.filter(result => {
@@ -200,7 +194,11 @@ class CommandParser {
             // Special error processing case: every possible parsing option ended with end-of-line
             // Report the command as incomplete, and process errors.
             if (nonterminalResults.length === 0) {
-                if (currResults.length === 0) {
+                if (successfulNodes.length !== 0) {
+                    break;
+                }
+
+                if (currResults.length === 1) {
                     return generateUnambiguousReport(currResults[0]);
                 } else {
                     // Ambiguous case, this sucks.
@@ -224,6 +222,7 @@ class CommandParser {
                 // Here is the "annoying" case: we have *completely* failed to parse
                 // Here, we must try our best to accurately identify the source of the problem, and generate a 
                 // correct diagnostic for the developer.
+                assert(newResults.length !== 0);
                 if (newResults.length === 1) {
                     return generateUnambiguousReport(newResults[0]);
                 } else {
@@ -233,6 +232,7 @@ class CommandParser {
 
             currResults = validResults;
 
+            // Consume whitespaces, generating errors if reasonable
             for (const result of currResults) {
                 if (result.tokReader.current() === undefined)
                     continue;
@@ -241,7 +241,7 @@ class CommandParser {
                     throw Error("illegal tokenizer state");
                 }
 
-                if (result.tokReader.current().value.str() != " ") {
+                if (result.tokReader.current().value.str() !== " ") {
                     result.diagnostics.push({
                         range: toLspRange(this.line, result.tokReader.current()),
                         message: "Extra space in command",
@@ -251,6 +251,15 @@ class CommandParser {
                 result.tokReader.next();
             }
         }
+
+        assert(successfulNodes.length !== 0);
+
+        if (successfulNodes.length !== 1) {
+            console.warn("not fully implemented here");
+            return generateUnambiguousReport(successfulNodes[0]);
+        }
+
+        return generateUnambiguousReport(successfulNodes[0]);
     }
 }
 

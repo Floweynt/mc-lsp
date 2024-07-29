@@ -4,29 +4,29 @@ import {ArgumentParser, ExampleEntry, ParseResultReporter} from "../argument";
 import {RangeSpec, parseNumber, parseRange} from "../misc";
 
 export interface PredicateValueParser {
-    parse: (str: RangeString, res: ParseResultReporter) => void;
+    parse: (str: RangeString, reporter: ParseResultReporter) => void;
     readonly allowEmpty: boolean;
 }
 
 export class FloatPredicate implements PredicateValueParser {
-    public static readonly EXAMPLES: string[] = ["0", "1234", "+12.34"];
+    public static readonly EXAMPLES: readonly string[] = ["0", "1234", "+12.34"];
 
-    public parse(str: RangeString, res: ParseResultReporter) {
+    public parse(str: RangeString, reporter: ParseResultReporter) {
         parseNumber(str, {
             isInt: false,
             err: {
                 parseFail: "failed to parse float",
             },
-        }, res);
+        }, reporter);
     }
 
     allowEmpty = false;
 }
 
 export class PositiveIntPredicate implements PredicateValueParser {
-    public static readonly EXAMPLES: string[] = ["0", "1234", "+12.34"];
+    public static readonly EXAMPLES: readonly string[] = ["0", "1234", "+12.34"];
 
-    public parse(str: RangeString, res: ParseResultReporter) {
+    public parse(str: RangeString, reporter: ParseResultReporter) {
         parseNumber(str, {
             isInt: true,
             min: 0,
@@ -34,14 +34,14 @@ export class PositiveIntPredicate implements PredicateValueParser {
                 parseFail: "failed to parse float",
                 belowMin: () => "expected non-negative integer",
             },
-        }, res);
+        }, reporter);
     }
 
     allowEmpty = false;
 }
 
 export class FloatRangePredicate implements PredicateValueParser {
-    public static readonly EXAMPLES: string[] = ["0", "12", "12..34", "..12", "12..", "1.4..2.3"];
+    public static readonly EXAMPLES: readonly string[] = ["0", "12", "12..34", "..12", "12..", "1.4..2.3"];
     private readonly spec: RangeSpec;
 
     public constructor(allowNegative: boolean) {
@@ -57,15 +57,15 @@ export class FloatRangePredicate implements PredicateValueParser {
         };
     }
 
-    public parse(str: RangeString, res: ParseResultReporter) {
-        parseRange(str, this.spec, res);
+    public parse(str: RangeString, reporter: ParseResultReporter) {
+        parseRange(str, this.spec, reporter);
     }
 
     allowEmpty = false;
 }
 
 export class IntRangePredicate implements PredicateValueParser {
-    public static readonly EXAMPLES: string[] = ["0", "12", "12..34", "..12", "12.."];
+    public static readonly EXAMPLES: readonly string[] = ["0", "12", "12..34", "..12", "12.."];
     private readonly spec: RangeSpec;
 
     public constructor(allowNegative: boolean) {
@@ -81,8 +81,8 @@ export class IntRangePredicate implements PredicateValueParser {
         };
     }
 
-    public parse(str: RangeString, res: ParseResultReporter) {
-        parseRange(str, this.spec, res);
+    public parse(str: RangeString, reporter: ParseResultReporter) {
+        parseRange(str, this.spec, reporter);
     }
 
     allowEmpty = false;
@@ -94,47 +94,47 @@ export interface PredicateParser {
 }
 
 export class StringWithNegationPredicate implements PredicateValueParser {
-    public static readonly EXAMPLES: string[] = ["a", "b", "!a", "!"];
-    public allowEmpty: boolean;
-    private readonly valueValidation: (str: RangeString, res: ParseResultReporter) => void;
+    public static readonly EXAMPLES: readonly string[] = ["a", "b", "!a", "!"];
+    public readonly allowEmpty: boolean;
+    private readonly validation: (str: RangeString, reporter: ParseResultReporter) => void;
     private readonly tokenType?: SemanticTokenType;
 
-    public constructor(allowEmpty: boolean, valueValidation: (str: RangeString, res: ParseResultReporter) => void, tokenType?: SemanticTokenType) {
+    public constructor(allowEmpty: boolean, validation: (str: RangeString, reporter: ParseResultReporter) => void, tokenType?: SemanticTokenType) {
         this.allowEmpty = allowEmpty;
-        this.valueValidation = valueValidation;
+        this.validation = validation;
         this.tokenType = tokenType;
     }
 
-    public parse(str: RangeString, res: ParseResultReporter) {
+    public parse(str: RangeString, reporter: ParseResultReporter) {
         if (str.str().startsWith("!")) {
-            res.token(sliceLenRange(str.range(), 0, 1), SemanticTokenType.OPERATOR);
+            reporter.token(sliceLenRange(str.range(), 0, 1), SemanticTokenType.OPERATOR);
             str = str.slice(1);
         }
 
         if (!this.allowEmpty && str.length() == 0) {
-            res.err(str, "empty ! not allowed");
+            reporter.err(str, "empty ! not allowed");
         }
 
-        this.valueValidation(str, res);
+        this.validation(str, reporter);
         if (this.tokenType)
-            res.token(str, this.tokenType);
+            reporter.token(str, this.tokenType);
     }
 }
 
 export class SimpleStringPredicate implements PredicateValueParser {
-    public static readonly EXAMPLES: string[] = ["a", "b"];
-    public allowEmpty: boolean;
-    private readonly valueValidation: (str: RangeString, res: ParseResultReporter) => void;
+    public static readonly EXAMPLES: readonly string[] = ["a", "b"];
+    public readonly allowEmpty: boolean;
+    private readonly validation: (str: RangeString, reporter: ParseResultReporter) => void;
     private readonly tokenType: SemanticTokenType;
 
-    public constructor(allowEmpty: boolean, valueValidation: (str: RangeString, res: ParseResultReporter) => void, tokenType: SemanticTokenType) {
+    public constructor(allowEmpty: boolean, validation: (str: RangeString, reporter: ParseResultReporter) => void, tokenType: SemanticTokenType) {
         this.allowEmpty = allowEmpty;
-        this.valueValidation = valueValidation;
+        this.validation = validation;
         this.tokenType = tokenType;
     }
 
-    public parse(str: RangeString, res: ParseResultReporter) {
-        this.valueValidation(str, res);
-        res.token(str, this.tokenType);
+    public parse(str: RangeString, reporter: ParseResultReporter) {
+        this.validation(str, reporter);
+        reporter.token(str, this.tokenType);
     }
 }

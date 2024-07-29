@@ -10,7 +10,7 @@ export class NDimensionalVectorArgument {
     public readonly useFloat: boolean;
 
     private static extractChar(chars: string, str: RangeString): [RangeString, RangeString] {
-        if (chars.indexOf(str.charAt(0).str()) != -1) {
+        if (chars.indexOf(str.charAt(0).str()) !== -1) {
             return [str.charAt(0), str.slice(1)];
         }
 
@@ -22,11 +22,11 @@ export class NDimensionalVectorArgument {
             const [prefix, offset] = NDimensionalVectorArgument.extractChar(this.relChars, arg.value);
             const offsetFloat = (this.useFloat ? Number.parseFloat : Number.parseInt)(offset.str());
 
-            if (prefix.length() != 0) {
+            if (prefix.length() !== 0) {
                 res.token(prefix, SemanticTokenType.POS_REL);
             }
 
-            if (offset.length() != 0) {
+            if (offset.length() !== 0) {
                 parseNumber(offset, {
                     isInt: !this.useFloat,
                     err: {
@@ -66,12 +66,11 @@ export class NDimensionalVectorArgument {
         args.push(input.consume());
         for (let i = 1; i < this.dim; i++) {
             const space = input.consume();
-
             const arg = input.consume();
             if (arg == undefined) {
                 return res.err(
                     between(args[0], input.last()),
-                    `${this.name}: unexpected end-of-line command`
+                    `${this.name}: unexpected end-of-line in command`
                 );
             }
             

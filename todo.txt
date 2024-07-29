@@ -1,0 +1,39 @@
+- entity
+- vec3
+- resource_location
+- resource
+- uuid
+- game_profile
+message
+component
+- block_pos
+item_predicate
+block_predicate
+item_stack
+- time
+- objective
+score_holder
+nbt_path
+nbt_compound_tag
+nbt_tag
+function
+- angle
+mob_effect
+item_enchantment
+- swizzle
+entity_anchor
+int_range
+- dimension
+- rotation
+- block_state
+- column_pos
+entity_summon
+- item_slot
+- resource_or_tag
+particle
+- objective_criteria
+- scoreboard_slot
+- operation
+- vec2
+- team
+- color

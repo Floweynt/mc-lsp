@@ -8,7 +8,7 @@ import {FloatPredicate, FloatRangePredicate, IntRangePredicate, PositiveIntPredi
 
 export interface PredicateParserInfo {
     factory: () => PredicateParser;
-    sample?: ExampleEntry[];
+    sample?: readonly ExampleEntry[];
 }
 
 export class ScorePredicate implements PredicateValueParser {

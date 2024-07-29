@@ -174,6 +174,8 @@ export class TokenReader {
     }
 
     public consume() {
+        if (this.index === this.tokens.length)
+            return this.tokens[this.index];
         return this.tokens[this.index++];
     }
 
@@ -187,6 +189,10 @@ export class TokenReader {
 
     public fork() {
         return new TokenReader(this.tokens, this.text, this.index);
+    }
+
+    public seek(index: number) {
+        this.index = index;
     }
 }
 

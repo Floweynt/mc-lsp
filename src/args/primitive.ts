@@ -2,6 +2,7 @@ import {TokenReader, between} from "../tok";
 import {ArgParseResult, ArgumentParser, ExampleEntry, UNQUOTED_STRING_REGEX} from "./argument";
 import {SemanticTokenType} from "../sem";
 import {NumberSpec, parseNumber} from "./misc";
+import assert from "assert";
 
 export class StringParser implements ArgumentParser {
     private readonly type: "greedy" | "phrase" | "word";
@@ -12,32 +13,35 @@ export class StringParser implements ArgumentParser {
         word: ["word", "words_with_underscores"],
     };
 
-
     public constructor(params: object) {
-        this.type = (params as any)["type"];
+        assert("type" in params);
+        this.type = params.type as ("greedy" | "phrase" | "word");
     }
 
     public tryParse(input: TokenReader): ArgParseResult {
         switch (this.type) {
-            case "greedy": {
-                const text = input.text.slice(input.current().value.start(), input.last().value.end());
-                const result = new ArgParseResult();
-                result.token(between(input.current(), input.last()), SemanticTokenType.STRING);
-                input.index = input.tokens.length;
-                return result;
+        case "greedy": {
+            // const text = input.text.slice(input.current().value.start(), input.last().value.end());
+            const result = new ArgParseResult();
+            result.token(between(input.current(), input.last()), SemanticTokenType.STRING);
+            input.index = input.tokens.length;
+            return result;
+        }
+        case "phrase": {
+            const token = input.consume();
+            const res = new ArgParseResult();
+            res.token(token, SemanticTokenType.STRING);
+            return res;
+        }
+        case "word": {
+            const token = input.consume();
+            const res = new ArgParseResult();
+            if (!UNQUOTED_STRING_REGEX.test(token.value.str())) {
+                res.err(token, "StringArgument(word): illegal character in word; it should match [a-zA-Z0-9_.+-]+");
             }
-            case "phrase": {
-                throw Error("not impl");
-            }
-            case "word": {
-                const token = input.consume();
-                const res = new ArgParseResult();
-                if (!UNQUOTED_STRING_REGEX.test(token.value.str())) {
-                    res.err(token, "StringArgument(word): illegal character in word; it should match [a-zA-Z0-9_.+-]+");
-                }
-                res.token(token, SemanticTokenType.STRING);
-                return res;
-            }
+            res.token(token, SemanticTokenType.STRING);
+            return res;
+        }
         }
     }
 
