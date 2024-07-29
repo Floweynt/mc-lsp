@@ -1,6 +1,7 @@
 import {SemanticTokenType} from "../sem";
 import {CommandToken, TokenReader} from "../tok";
 import {ArgParseResult, ArgumentParser, UnquotedStringParser} from "./argument";
+import {EntityParser} from "./entity";
 
 export class TeamArgument extends UnquotedStringParser {
     public constructor() {
@@ -9,7 +10,7 @@ export class TeamArgument extends UnquotedStringParser {
 
     parseFinal(input: TokenReader, arg: CommandToken, res: ArgParseResult): void {
         // TODO: report suspicious team names 
-        res.token(arg.value, SemanticTokenType.TEAM);
+        res.token(arg, SemanticTokenType.SCOREBOARD_ID);
     }
 
     public suggest(input: TokenReader): string[] {
@@ -24,7 +25,7 @@ export class ObjectiveArgument extends UnquotedStringParser {
 
     parseFinal(input: TokenReader, arg: CommandToken, res: ArgParseResult): void {
         // TODO: report suspicious team names 
-        res.token(arg.value, SemanticTokenType.OBJECTIVE);
+        res.token(arg, SemanticTokenType.SCOREBOARD_ID);
     }
 
     public suggest(input: TokenReader): string[] {
@@ -39,7 +40,7 @@ export class ScoreboardSlotArgument extends UnquotedStringParser {
 
     parseFinal(input: TokenReader, arg: CommandToken, res: ArgParseResult): void {
         // TODO: report suspicious team names 
-        res.token(arg.value, SemanticTokenType.SCOREBOARD_SLOT);
+        res.token(arg, SemanticTokenType.SCOREBOARD_ID);
     }
 
     public suggest(input: TokenReader): string[] {
@@ -50,11 +51,40 @@ export class ScoreboardSlotArgument extends UnquotedStringParser {
 export class ObjectiveCriteriaArgument implements ArgumentParser {
     tryParse(input: TokenReader): ArgParseResult {
         const res = new ArgParseResult;
-        res.token(input.consume().value, SemanticTokenType.OBJECTIVE_CRITERIA);
+        res.token(input.consume(), SemanticTokenType.SCOREBOARD_ID);
         return res;
     }
 
     public suggest(input: TokenReader): string[] {
         return [];
     }
+}
+
+export class ScoreHolderArgument implements ArgumentParser {
+    private readonly entityParser: EntityParser;
+
+    public constructor() {
+        this.entityParser = new EntityParser;
+    }
+
+    tryParse(input: TokenReader): ArgParseResult {
+        const arg = input.current();
+        if(arg.value.str().startsWith("@")) {
+            return this.entityParser.tryParse(input);
+        }
+
+        const res = new ArgParseResult;
+
+        input.consume();
+        if(arg.value.str() == "*") {
+            return res.token(arg, SemanticTokenType.OPERATOR); 
+        }
+
+        return res.token(arg, SemanticTokenType.STRING); // TODO: 
+    }
+
+    public suggest(input: TokenReader): string[] {
+        return [];
+    }
+
 }

@@ -41,6 +41,20 @@
             }
         ],
         "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": "warn"
+        "@typescript-eslint/no-unused-vars": "warn",
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "indent": [
+            "error",
+            4
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "eqeqeq": "warn",
+        "no-implicit-coercion": "error"
     }
 }

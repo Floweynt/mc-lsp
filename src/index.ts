@@ -9,11 +9,11 @@ import {
     Diagnostic,
     TextDocumentPositionParams,
     CompletionItem
-} from 'vscode-languageserver/node';
-import {TextDocument} from 'vscode-languageserver-textdocument';
-import {SEMANTIC_TOKEN_NAMES} from './sem';
-import {Config} from './config';
-import {FileManager} from './fileman';
+} from "vscode-languageserver/node";
+import {TextDocument} from "vscode-languageserver-textdocument";
+import {SEMANTIC_TOKEN_NAMES} from "./sem";
+import {Config} from "./config";
+import {FileManager} from "./fileman";
 
 interface LSPSettings {
     maxNumberOfProblems: number;

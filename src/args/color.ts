@@ -4,19 +4,19 @@ import {ArgParseResult, UnquotedStringParser} from "./argument";
 
 export class ColorArgument extends UnquotedStringParser {
     private static normalizeString(str: string) {
-        return str.toLowerCase().replace(/[^a-z]/, "");
+        return str.toLowerCase().replace(/[^a-z]/g, "");
     }
 
-    private static readonly KNOWN_NAMES = new Set(["black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple", "gold", "gray",
-        "dark_gray", "blue", "green", "aqua", "red", "light_purple", "yellow", "white"]);
+    private static readonly KNOWN_NAMES = new Set(["black", "darkblue", "darkgreen", "darkaqua", "darkred", "darkpurple", "gold", "gray",
+        "darkgray", "blue", "green", "aqua", "red", "lightpurple", "yellow", "white"]);
 
     parseFinal(_input: TokenReader, arg: CommandToken, res: ArgParseResult): void {
         const name = ColorArgument.normalizeString(arg.value.str());
         if (!ColorArgument.KNOWN_NAMES.has(name)) {
-            res.err(arg.value, `ColorArgument: unknown color '${name}'`);
+            res.err(arg, `ColorArgument: unknown color '${name}'`);
         }
 
-        res.token(arg.value, SemanticTokenType.COLOR);
+        res.token(arg, SemanticTokenType.ENUM);
     }
 
     public suggest(input: TokenReader): string[] {

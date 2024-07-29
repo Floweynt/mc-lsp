@@ -1,23 +1,27 @@
 import {SemanticTokenType} from "../sem";
-import {CommandRange, RangeString, TokenReader} from "../tok";
-import {ArgParseResult, ArgumentParser} from "./argument";
+import {RangeString, TokenReader} from "../tok";
+import {ArgParseResult, ArgumentParser, ParseResultReporter, PrefixedParseResultReporter} from "./argument";
 
 export function parseGenericResource(
-    name: string,
-    res: ArgParseResult,
+    res: ParseResultReporter,
+    allowTag: boolean,
     text: RangeString,
-    semanticRange: CommandRange,
     semanticTokenType: SemanticTokenType
 ) {
-    const components = text.split(':');
+    if (allowTag && text.str().startsWith("#")) {
+        res.token(text.charAt(0), semanticTokenType);
+        text = text.slice(1);
+    }
+
+    const components = text.split(":");
     const range = text;
     if (components.length > 2) {
-        return res.err(range, `${name}: extra namespace separators found, expected <id> or <ns>:<p>`);
+        return res.err(range, "extra namespace separators found, expected <id> or <ns>:<p>");
     }
 
     // occurs when :...
     if (components[0].str() == "") {
-        return res.err(range, `${name}: missing namespace in resource`);
+        return res.err(range, "missing namespace in resource");
     }
 
     const hasNs = components.length != 1;
@@ -25,67 +29,42 @@ export function parseGenericResource(
     const path = hasNs ? components[1] : components[0];
 
     if (path.str() == "") {
-        return res.err(range, `${name}: missing path in resource`);
+        return res.err(range, "missing path in resource");
     }
 
     if (!/^[a-z0-9._/-]+$/.test(path.str())) {
-        return res.err(path, `${name}: resource path should match [a-z0-9._\\/-]+`);
+        return res.err(path, "resource path should match [a-z0-9._\\/-]+");
     }
 
     if (hasNs && !/^[a-z0-9._-]+$/.test(namespace.str())) {
-        return res.err(namespace, `${name}: resource namespace should match [a-z0-9._-]+`);
+        return res.err(namespace, "resource namespace should match [a-z0-9._-]+");
     }
 
-    res.token(semanticRange, semanticTokenType);
+    res.token(text, semanticTokenType);
     return res;
 }
 
 export class ResourceArgument implements ArgumentParser {
+    private readonly name: string;
+    private readonly allowTag: boolean;
+
+    public constructor(name: string, allowTag: boolean) {
+        this.name = name;
+        this.allowTag = allowTag;
+    }
+
     public tryParse(input: TokenReader): ArgParseResult {
-        const arg = input.consume();
-        return parseGenericResource(
-            "ResourceArgument",
-            new ArgParseResult(),
-            arg.value,
-            arg.value.range(),
+        const res = new ArgParseResult;
+        parseGenericResource(
+            new PrefixedParseResultReporter(res, this.name + ": "),
+            this.allowTag, 
+            input.consume().value,
             SemanticTokenType.RESOURCE
         );
+        return res;
     }
 
     public suggest(input: TokenReader): string[] {
         return [];
     }
 }
-
-export class ResourceOrTagArgument extends ResourceArgument {
-    public tryParse(input: TokenReader): ArgParseResult {
-        const arg = input.consume();
-
-        if (arg.value.str().startsWith("#")) {
-            if (arg.value.length() == 1) {
-                return new ArgParseResult().err(arg.value, "ResourceOrTagArgument(tag): empty tag is not allowed");
-            }
-
-            return parseGenericResource(
-                "ResourceOrTagArgument(tag)",
-                new ArgParseResult(),
-                arg.value.slice(1),
-                arg.value.range(),
-                SemanticTokenType.TAG
-            );
-        }
-
-        return parseGenericResource(
-            "ResourceOrTagArgument(resource)",
-            new ArgParseResult(),
-            arg.value,
-            arg.value.range(),
-            SemanticTokenType.RESOURCE
-        );
-    }
-
-    public suggest(input: TokenReader): string[] {
-        return [];
-    }
-}
-

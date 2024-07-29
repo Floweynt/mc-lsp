@@ -1,37 +1,34 @@
 export enum SemanticTokenType {
+    COMMENT,
     POS_REL, // ~, ^
     NUMBER,
     STRING,
     PLAYER_NAME,
 
     RESOURCE,
-    TAG,
+
     UUID,
     UNITS,
     SWIZZLE,
-    TEAM,
-    OBJECTIVE,
-    OBJECTIVE_CRITERIA,
-    SCOREBOARD_SLOT,
+    SCOREBOARD_ID,
     
-    COLOR,
+    ENUM,
     OPERATOR,
     SLOT,
-    LITERAL,
-    BLOCK_STATE_PROPERTY_NAME
+    KEYWORD,
+    COMMAND_LITERAL,
+    PROPERTY,
 }
 
 export const SEMANTIC_TOKEN_NAMES = [
+    "comment",
     "operator",
     "number",
     "string",
     "string",
 
     "string",
-    "string",
-    "string",
-    "string",
-    "string",
+
     "string",
     "string",
     "string",
@@ -41,5 +38,6 @@ export const SEMANTIC_TOKEN_NAMES = [
     "operator",
     "enumMember",
     "keyword",
+    "function",
     "property"
 ];

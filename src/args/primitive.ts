@@ -1,6 +1,7 @@
 import {TokenReader, between} from "../tok";
-import {ArgParseResult, ArgumentParser, ExampleEntry} from "./argument";
+import {ArgParseResult, ArgumentParser, ExampleEntry, UNQUOTED_STRING_REGEX} from "./argument";
 import {SemanticTokenType} from "../sem";
+import {NumberSpec, parseNumber} from "./misc";
 
 export class StringParser implements ArgumentParser {
     private readonly type: "greedy" | "phrase" | "word";
@@ -31,10 +32,10 @@ export class StringParser implements ArgumentParser {
             case "word": {
                 const token = input.consume();
                 const res = new ArgParseResult();
-                if (!/[a-zA-Z_.+-]+/.test(token.value.str())) {
-                    res.err(token.value.range(), "StringArgument(word): illegal character in word; it should match [a-zA-Z0-9_.+-]+");
+                if (!UNQUOTED_STRING_REGEX.test(token.value.str())) {
+                    res.err(token, "StringArgument(word): illegal character in word; it should match [a-zA-Z0-9_.+-]+");
                 }
-                res.token(token.value, SemanticTokenType.STRING);
+                res.token(token, SemanticTokenType.STRING);
                 return res;
             }
         }
@@ -49,39 +50,39 @@ export class StringParser implements ArgumentParser {
     }
 }
 
+export interface NumberPropertyParams {
+    min: number;
+    max: number;
+}
+
 export class NumberParser implements ArgumentParser {
-    private readonly isInteger: boolean;
-    private readonly range: [number, number];
+    private readonly spec: NumberSpec;
 
     private getName() {
-        return this.isInteger ? "IntegerArgument" : "FloatArgument";
+        return this.spec.isInt ? "IntegerArgument" : "FloatArgument";
     }
 
-    public constructor(isInteger: boolean, params: object) {
-        this.isInteger = isInteger;
-        this.range = [(params as any).min ?? -Number.MAX_VALUE, (params as any).max ?? Number.MAX_VALUE];
+    private static getName(isInt: boolean) {
+        return isInt ? "IntegerArgument" : "FloatArgument";
+    }
+
+    public constructor(isInteger: boolean, params: NumberPropertyParams) {
+        this.spec = {
+            isInt: isInteger,
+            max: params.max,
+            min: params.min,
+            err: {
+                parseFail: `${NumberParser.getName(isInteger)}: failed to parse number`,
+                belowMin: value => `${this.getName()}: ${value} is below the minimum of ${this.spec.min}`,
+                aboveMax: value => `${this.getName()}: ${value} exceeds maximum of ${this.spec.min}`,
+            },
+        };
     }
 
     public tryParse(input: TokenReader): ArgParseResult {
-        const res = new ArgParseResult;
-        const token = input.consume();
-
-        const value = (this.isInteger ? Number.parseInt : Number.parseFloat)(token.value.str());
-        res.token(token.value, SemanticTokenType.NUMBER);
-
-        if(Number.isNaN(value) || !Number.isFinite(value)) {
-            return res.err(token.value, `${this.getName()}: failed to parse number`);
-        }
-
-        if(value > this.range[1]) {
-            return res.err(token.value, `${this.getName()}: ${value} exceeds maximum of ${this.range[1]}`);
-        }
-
-        if(value < this.range[0]) {
-            return res.err(token.value, `${this.getName()}: ${value} is below the minimum of ${this.range[0]}`);
-        }
-
-        return res;
+        const ret = new ArgParseResult;
+        parseNumber(input.consume().value, this.spec, ret);
+        return ret;
     }
 
     public suggest(_input: TokenReader): string[] {

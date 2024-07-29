@@ -18,9 +18,9 @@ export class SlotArgument extends UnquotedStringParser {
     parseFinal(_input: TokenReader, arg: CommandToken, res: ArgParseResult): void {
         const name = arg.value;
         if (!SlotArgument.KNOWN_SLOTS.has(name.str())) {
-            res.err(arg.value, `SlotArgument: unknown color '${name}'`);
+            res.err(arg, `SlotArgument: unknown color '${name}'`);
         }
-        res.token(arg.value, SemanticTokenType.SLOT);
+        res.token(arg, SemanticTokenType.SLOT);
     }
 
     public suggest(input: TokenReader): string[] {

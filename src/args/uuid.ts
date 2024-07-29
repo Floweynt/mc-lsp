@@ -13,10 +13,10 @@ export class UUIDArgument implements ArgumentParser {
         } catch(e) {
             // uh oh, maybe the dashes are in bad locations...
             // TODO: handle this case, even though it's bad 
-            return res.err(arg.value, "Invalid UUID, see https://datatracker.ietf.org/doc/html/rfc4122");
+            return res.err(arg, "Invalid UUID, see https://datatracker.ietf.org/doc/html/rfc4122");
         }
 
-        return res.token(arg.value, SemanticTokenType.UUID);
+        return res.token(arg, SemanticTokenType.UUID);
     }
 
     public suggest(input: TokenReader): string[] {

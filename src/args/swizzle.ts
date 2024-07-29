@@ -16,7 +16,7 @@ export class SwizzleArgument implements ArgumentParser {
             }
         });
 
-        return res.token(arg.value, SemanticTokenType.SWIZZLE);
+        return res.token(arg, SemanticTokenType.SWIZZLE);
     }
 
     public suggest(input: TokenReader): string[] {

@@ -24,10 +24,10 @@ export class TimeArgument implements ArgumentParser {
         const res = new ArgParseResult;
         const arg = input.consume();
 
-        const [valueStr, suffix] = takeWhile(arg.value, c => c >= '0' && c <= '9');
+        const [valueStr, suffix] = takeWhile(arg.value, c => c >= "0" && c <= "9");
 
         if (valueStr.length() == 0) {
-            return res.err(arg.value, "TimeArgument: expected number optionally followed by units");
+            return res.err(arg, "TimeArgument: expected number optionally followed by units");
         }
 
         const value = Number.parseInt(valueStr.str());
@@ -52,7 +52,7 @@ export class TimeArgument implements ArgumentParser {
         const time = value * unitMultiplier;
 
         if (time < this.min) {
-            res.err(arg.value, `TimeArgument: a minimum of ${this.min} ticks was expected, but got ${time}`);
+            res.err(arg, `TimeArgument: a minimum of ${this.min} ticks was expected, but got ${time}`);
         }
 
         return res;

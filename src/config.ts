@@ -2,29 +2,30 @@ import {readFileSync} from "fs";
 import path from "path";
 import defaultCommands from "./data/commands.json";
 import blockState from "./data/blockstate.json";
+import registry from "./data/registry.json";
 
-export interface BaseCommand {
+export interface CommandNodeBase {
     readonly type: string;
-    readonly children?: {[key: string]: MCCommand};
+    readonly children?: {[key: string]: CommandNode};
     readonly redirect?: string[];
     readonly executable?: boolean;
 }
 
-export interface LiteralCommand extends BaseCommand {
+export interface CommandLiteralNode extends CommandNodeBase {
     readonly type: "literal";
 }
 
-export interface ArgumentCommand extends BaseCommand {
+export interface CommandArgumentNode extends CommandNodeBase {
     readonly type: "argument";
     readonly parser: string;
     readonly properties?: object;
 }
 
-export interface RootCommand extends BaseCommand {
+export interface CommandRootNode extends CommandNodeBase {
     readonly type: "root";
 }
 
-export type MCCommand = LiteralCommand | ArgumentCommand | RootCommand;
+export type CommandNode = CommandLiteralNode | CommandArgumentNode | CommandRootNode;
 
 export interface BlockStateProperty {
     name: string;
@@ -37,17 +38,23 @@ export type BlockStateRegistry = {
     };
 }
 
+export type Registry = {
+    [key: string]: string[];
+}
+
 export class Config {
-    private command: RootCommand;
+    private command: CommandRootNode;
     private blockStates: BlockStateRegistry;
+    private registry: Registry;
 
     public constructor() {
-        this.command = defaultCommands as RootCommand;
+        this.command = defaultCommands as CommandRootNode;
         this.blockStates = blockState;
+        this.registry = registry;
     }
 
     public load(root: string) {
-        this.command = JSON.parse(readFileSync(path.join(root, "command_registration.json")).toString()) as RootCommand;
+        this.command = JSON.parse(readFileSync(path.join(root, "command_registration.json")).toString()) as CommandRootNode;
     }
 
     public getCommand() {
@@ -56,5 +63,10 @@ export class Config {
 
     public getBlockStates() {
         return this.blockStates;
+    }
+
+
+    public getRegistry() {
+        return this.registry;
     }
 }

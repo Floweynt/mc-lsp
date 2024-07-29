@@ -1,6 +1,7 @@
 import {SemanticTokenType} from "../sem";
 import {CommandToken, RangeString, TokenReader, between} from "../tok";
 import {ArgParseResult} from "./argument";
+import {parseNumber} from "./misc";
 
 export class NDimensionalVectorArgument {
     public readonly name: string;
@@ -26,11 +27,12 @@ export class NDimensionalVectorArgument {
             }
 
             if (offset.length() != 0) {
-                if (Number.isNaN(offsetFloat) || !Number.isFinite(offsetFloat)) {
-                    res.err(offset, `${this.name}: failed to parse float ${offset}`);
-                }
-
-                res.token(offset, SemanticTokenType.NUMBER);
+                parseNumber(offset, {
+                    isInt: !this.useFloat,
+                    err: {
+                        parseFail: `${this.name}: failed to parse offset`,
+                    },
+                }, res);
             }
 
             return [arg, prefix, offset, offsetFloat];
@@ -64,21 +66,23 @@ export class NDimensionalVectorArgument {
         args.push(input.consume());
         for (let i = 1; i < this.dim; i++) {
             const space = input.consume();
+
+            const arg = input.consume();
+            if (arg == undefined) {
+                return res.err(
+                    between(args[0], input.last()),
+                    `${this.name}: unexpected end-of-line command`
+                );
+            }
+            
             if (!space.isWhitespace) {
                 throw Error("illegal tokenizer state");
             }
 
             if (space.value.str() != " ") {
-                res.err(space.value, "Extra space in command");
+                res.err(space, "Extra space in command");
             }
-
-            const arg = input.consume();
-            if (arg == undefined) {
-                return res.err(
-                    between(args[0], input.last()), 
-                    `${this.name}: unexpected end-of-line command`
-                );
-            }
+            
             args.push(arg);
         }
 

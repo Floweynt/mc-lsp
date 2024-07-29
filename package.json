@@ -11,9 +11,11 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^1.6.1",
     "@stylistic/eslint-plugin-ts": "^1.6.1",
+    "@types/chalk": "^2.2.0",
     "@types/node": "^20.11.17",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/parser": "^7.0.1",
+    "chalk": "^4.0.0",
     "eslint": "^8.56.0",
     "eslint-stylistic": "^0.0.0-0",
     "ts-node": "^10.9.2",

@@ -1,7 +1,8 @@
-import {Diagnostic, DiagnosticServerCancellationData, DiagnosticSeverity, TextDocumentPositionParams} from "vscode-languageserver";
-import {CommandSemanticInfo, CommandReporter, parse, doAutocomplete} from "./cmd_parser";
+import {Diagnostic, TextDocumentPositionParams} from "vscode-languageserver";
+import {CommandSemanticInfo, parseCmd, doAutocomplete} from "./cmd_parser";
 import {Config} from "./config";
-import {toLspRange} from "./tok";
+import {SemanticTokenType} from "./sem";
+import {SemanticToken} from "./args/argument";
 
 export interface FileInfo {
     semanticToken: number[];
@@ -25,20 +26,33 @@ export class FileManager {
     public updateFile(uri: string, content: string) {
         const lines = content.split("\n");
 
-        const reporter: CommandReporter = {
-            diagnostics: [],
-            tokens: [],
-        };
+        const tokens: SemanticToken[] = [];
+        const diagnostics: Diagnostic[] = [];
 
         const parseCache = new Map<number, CommandSemanticInfo>();
 
         lines.forEach((lineText, lineNo) => {
-            lineText = lineText.trimEnd();
             if (lineText.length == 0)
                 return;
 
-            const parseRes = parse(lineNo, lineText, this.config.getCommand(), reporter, this.config);
+            if (lineText.trimStart().startsWith("#")) {
+                tokens.push({
+                    line: lineNo,
+                    range: [0, lineText.length],
+                    type: SemanticTokenType.COMMENT,
+                });
+
+                return;
+            }
+
+            const parseRes = parseCmd(lineNo, lineText, this.config.getCommand(), this.config);
+            if (parseRes == undefined) {
+                return;
+            }
             parseCache.set(lineNo, parseRes);
+            tokens.push(...parseRes.tokens);
+            diagnostics.push(...parseRes.diagnostics);
+
         });
 
         let prev = {
@@ -46,9 +60,9 @@ export class FileManager {
             range: [0, 0],
         };
 
-        const semRes = new Array<number>(5 * reporter.tokens.length);
+        const semRes = new Array<number>(5 * tokens.length);
 
-        reporter.tokens.forEach((value, index) => {
+        tokens.forEach((value, index) => {
             const lineDiff = semRes[index * 5] = value.line - prev.line;
             semRes[index * 5 + 1] = (lineDiff == 0) ? value.range[0] - prev.range[0] : value.range[0];
             semRes[index * 5 + 2] = value.range[1] - value.range[0];
@@ -59,7 +73,7 @@ export class FileManager {
         });
 
         this.cache.set(uri, {
-            diagnostics: reporter.diagnostics,
+            diagnostics: diagnostics,
             semanticToken: semRes,
             parseCache: parseCache,
         });
